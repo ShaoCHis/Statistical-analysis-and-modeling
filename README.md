@@ -1,4 +1,4 @@
-# Statistical-analysis-and-modeling
+# 统计分析与建模|Statistical analysis and modeling
 Statistical analysis and modeling learning experience
 
 
@@ -14,7 +14,7 @@ Language：R
 MarkDown文件可用Rstudio直接打开运行
 ```
 
-#### Catalogue
+#### 目录|Catalogue
 ```
 First--------Basic
 ```
