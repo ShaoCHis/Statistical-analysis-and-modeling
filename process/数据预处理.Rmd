@@ -1,0 +1,52 @@
+---
+title: "数据预处理"
+author: "ShenTao"
+date: "10/11/2021"
+output: pdf_document
+---
+
+#数据过滤which与subset
+```{r}
+df=data.frame(
+  year=c(2000,2001,2000,2003,2001),
+  month=c(1,2,3,4,5)
+)
+df
+#取出其中字集year==2000的元组
+subset(df,year=="2000")
+#df$year即是拿到df中year属性
+#注意有行列，如果不要求列留空即可，如下
+df[df$year==2000,]
+df[which(df$year==2000),]
+```
+
+#缺失值处理，FLASE（假）：以0计算；
+             NA（缺失值）：参与计算，无论如何计算，计算结果均为NA
+             NULL（空值）：不参与计算
+             NaN：无意义的数，比如sqrt（-2）
+#缺失值检测，判断x是否缺失值的函数是is.na(x),是返回TRUE，否则返回FALSE
+             判断x是否完整的函数是complete.cases(x)
+             summary可以显示每个变量的缺失值数量
+             返回数据缺失模式使用mice包中的md.pattern(x)函数
+#缺失值处理，对于缺失数据的处理通常有三种方法：
+             1）当缺失数据较少时直接删除相应样本
+             2）对缺失数据进行插补
+             3）使用对缺失数据不敏感的分析方法，如决策树
+```{r}
+v=c(1,2,3,NA,4,NA,5)
+print(v)
+#如果是空值返回TRUE然后该索引下的v[index]被更新为0
+v[is.na(v)]=0
+print(v)
+```
+
+```{r}
+x=iris
+x[sample(1:nrow(x),6),1]<-NA
+#随机在iris数据集第一列生成6行
+colnames(x)<-c("SL","SW","PL","PW","SP")
+md.pattern(x)
+```
+
+```
+```

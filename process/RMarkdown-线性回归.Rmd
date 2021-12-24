@@ -1,0 +1,70 @@
+---
+title: "liner_model"
+author: "gz"
+date: "10/7/2021"
+output: html_document
+---
+
+```{r lm}
+  ## build linear model
+  set.seed(123)
+  x=1:100
+  k=0.2
+  y=1+k*x+rnorm(100,0,1)
+  model=lm(y~x)
+  (summary_model=summary(m1))
+```
+
+
+
+
+```{r coefficients}  
+  ## get coefficients
+  model$coefficients
+  summary_model$coefficients
+  summary_model$fstatistic
+  pf(summary_model$fstatistic[1], summary_model$fstatistic[2],summary_model$fstatistic[3],lower.tail = FALSE)
+```
+
+```{r t_values}  
+  ## calculate t values
+  X=cbind(1,x)
+  betaHat = solve(t(X) %*% X) %*% t(X) %*% y 
+  sigma = summary_model$sigma
+  var_betaHat =  sigma^2 * solve(t(X) %*% X)
+  mse_kk_betaHat =  sqrt(diag(var_betaHat))
+  t_values=betaHat/mse_kk_betaHat
+  df=nrow(X)-ncol(X)
+  p= 2 * pt(abs(t_values), df = df, lower.tail = FALSE)
+  data.frame(betaHat,mse_kk_betaHat,t_values,p)
+  print(summary_model$coefficients)
+```
+
+```{r f_values}  
+  ## calculate f values
+  SST=sum((y-mean(y))^2)
+  SSR=sum((fitted(model)-mean(y))^2)
+  SSE=sum((fitted(model)-y)^2)
+  n=nrow(X) #100
+  K=ncol(X) #2
+  f_values=(SSR/(K-1))/(SSE/(n-K))
+  p=pf(f_values,K-1,n-K,lower.tail = FALSE)
+  print(paste("f_values:",f_values,", p:",p))
+  summary_model$fstatistic
+```
+
+```{r AIC}  
+n <- 1000
+x <- 1:n
+set.seed(1)
+y <- 10 + 2*x + rnorm(n, 0, 2)
+mod <- lm(y ~ x)
+summary(mod)
+logLik(mod) 
+#'log Lik.' -2145.562 (df=3)
+(sigma <- summary(mod)$sigma)
+sum(log(dnorm(x = y, mean = predict(mod), sd = sigma)))
+#[1] -2145.563
+sum(log(dnorm(x = resid(mod), mean = 0, sd = sigma)))
+#[1] -2145.563
+```

@@ -1,0 +1,226 @@
+---
+title: "Fitting Distributions with R"
+author: "Gao Zhen"
+date: "8/19/2021"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+## 1. Some famous distributions
+```{r normal distribution}
+curve(1/(sqrt(2)*pi)*exp(-x^2/2),from=-4,to=4)
+```
+```{r possion distribution}
+lambda=2.5
+curve(exp(-lambda)*lambda^x/factorial(x),from=0,to=15)
+```
+```{r gamma distribution}
+lambda=1.5
+alpha=2
+curve(lambda^alpha*x^(alpha-1)*exp(-lambda*x)/gamma(alpha),from=0,to=15)
+```
+```{r log}
+lambda=1.5
+alpha=2
+curve(log(x),from=-10,to=150)
+```
+
+```{r possion distribution}
+curve(1/exp(x),from=-100,to=100)
+```
+
+
+```{r normal distribution}
+x.norm<-rnorm(n=200,m=10,sd=2)
+hist(x.norm,main="Histogram of observed data")
+
+```
+
+```{r estimate frequency density：density()}
+plot(density(x.norm),main="Density estimate of data")
+```
+```{r compute the empirical cumulative distribution function ：ecdf()}
+plot(ecdf(x.norm),main="Empirical cumulative distribution function")
+```
+
+```{r Quantile-Quantile (Q-Q) plot-1}
+z.norm<-(x.norm-mean(x.norm))/sd(x.norm) 
+qqnorm(z.norm) ## drawing the QQplot 
+abline(0,1) ## drawing a 45-degree reference line
+```
+
+```{r Quantile-Quantile (Q-Q) plot-2}
+x.wei<-rweibull(n=200,shape=2.1,scale=1.1) 
+## sampling from a distribution with parameters shape=2.1 and scale=1.1 
+x.teo<-rweibull(n=200,shape=2, scale=1) 
+## theoretical quantiles Weibull population with known parameters shape=2 e scale=1 
+qqplot(x.teo,x.wei,main="QQ-plot distr. Weibull") 
+## QQ-plot 
+abline(0,1) ## a 45-degree reference line is plotted
+```
+```{r Poisson’s distribution}
+x.poi<-rpois(n=200,lambda=2.5)
+hist(x.poi,main="Poisson distribution")
+```
+
+```{r Normal (gaussian) distribution}
+curve(dnorm(x,m=10,sd=2),from=0,to=20,main="Normal distribution")
+```
+
+```{r dnorm}
+  print("x:")
+  (x=seq(-1,1,length.out=20))
+  print("--------------")
+  print("density of x:")
+  (p=dnorm(x,0,1))
+```
+
+```{r dnorm}
+  plot(p~x,xlim=c(-2,2))
+```  
+
+```{r dnorm}
+    plot(rnorm(100,0,1))
+```  
+
+```{r pnorm}
+  x=seq(-3,3,by=0.1)
+  (pvalues=pnorm(x))
+  plot(pvalues,xaxt='n',type='l',xlab="Quantiles",ylab="Probability Density")
+  axis(1,at=which(pvalues==pnorm(-2)),labels=round(pnorm(-2),2))
+  axis(1,at=which(pvalues==pnorm(-1)),labels=round(pnorm(-1),2))
+  axis(1,at=which(pvalues==pnorm(0)),labels=round(pnorm(0),2))
+  axis(1,at=which(pvalues==pnorm(1)),labels=round(pnorm(1),2))
+  axis(1,at=which(pvalues==pnorm(2)),labels=round(pnorm(2),2))
+```
+
+```{r qnorm}
+  x=seq(0,1,by=0.25)
+  data.frame(zvalues=qnorm(x))
+```
+
+```{r qnorm}
+  x=seq(0,1,by=0.01)
+  zvalues=qnorm(x)
+  plot(zvalues~x,type='l',xlab="Quantiles",ylab="Z-scores")
+```
+
+
+```{r Gamma distribution}
+curve(dgamma(x,scale=1.5,shape=2),from=0,to=15,main="Gamma distribution")
+```
+
+```{r Weibull distribution}
+curve(dweibull(x, scale=2.5, shape=1.5),from=0, to=15, main="Weibull distribution")
+```
+
+## 2. Parameters’ estimate
+
+```{r Maximum likelihood estimation est(),warning=FALSE}
+library(stats4) ## loading package stats4 
+x.gam<-rgamma(200,rate=0.5,shape=3.5)
+ll<-function(lambda,alfa) {
+  n<-200 
+  x<-x.gam
+  -n*alfa*log(lambda)+n*log(gamma(alfa))-(alfa-1)*sum(log(x))+lambda*sum(x)
+} ## -log-likelihood function 
+est<-mle(minuslog=ll,start=list(lambda=2,alfa=1)) 
+```
+```{r Maximum likelihood estimation}
+summary(est) 
+```
+
+```{r Maximum likelihood estimation fitdistr()-1,warning=FALSE}
+library(MASS) ## loading package MASS 
+fitdistr(x.gam,"gamma") ## fitting gamma pdf parameters
+```
+
+
+
+```{r Maximum likelihood estimation fitdistr()-2,warning=FALSE}
+x.wei<-rweibull(n=200,shape=2.1,scale=1.1)
+fitdistr(x.wei,densfun=dweibull,start=list(scale=1,shape=1))## Weibull pdf parameters
+x.norm<-rnorm(n=200,m=10,sd=2)
+fitdistr(x.norm,"normal") ## fitting gaussian pdf parameters mean sd
+```
+
+## 3. Goodness of fit tests
+
+```{r hist}
+h<-hist(x.norm,breaks=15) 
+```
+
+```{r evaluate the goodness of fit graphics-1}
+xhist<-c(min(h$breaks),h$breaks) 
+yhist<-c(0,h$density,0) 
+xfit<-seq(min(x.norm),max(x.norm),length=40)
+yfit<-dnorm(xfit,mean=mean(x.norm),sd=sd(x.norm)) 
+plot(xhist,yhist,type="s",ylim=c(0,max(yhist,yfit)), main="Normal pdf and histogram") 
+lines(xfit,yfit, col="red")
+```
+```{r evaluate the goodness of fit graphics-2}
+h<-hist(x.norm,breaks=15,freq=FALSE,main="Normal pdf and histogram") 
+xfit<-seq(min(x.norm),max(x.norm),length=40)
+yfit<-dnorm(xfit,mean=mean(x.norm),sd=sd(x.norm)) 
+lines(xfit,yfit, col="red")
+```
+
+```{r evaluate the goodness of fit graphics-3}
+x<-seq(0,2,0.1)
+plot(x,pweibull(x,scale=1,shape=2),type="l",col="red",main="ECDF and Weibull CDF") 
+plot(ecdf(x.wei),add=TRUE)
+```
+
+```{r chi-square test-1}
+  set.seed(123)
+  x.gam<-rgamma(200,rate=0.5,shape=3.5)
+  x.gam.cut<-cut(x.gam,breaks=c(0,3,6,9,12,18,50)) ##binning data
+  f.os<-vector() 
+  for(i in 1:6) f.os[i]<- table(x.gam.cut)[[i]]/200 ## empirical frequencies
+  p<-c((pgamma(3,shape=3.5,rate=0.5)-pgamma(0,shape=3.5,rate=0.5)), (pgamma(6,shape=3.5,rate=0.5)-pgamma(3,shape=3.5,rate=0.5)), (pgamma(9,shape=3.5,rate=0.5)-pgamma(6,shape=3.5,rate=0.5)), (pgamma(12,shape=3.5,rate=0.5)-pgamma(9,shape=3.5,rate=0.5)), (pgamma(18,shape=3.5,rate=0.5)-pgamma(12,shape=3.5,rate=0.5)),
+  (pgamma(50,shape=3.5,rate=0.5)-pgamma(18,shape=3.5,rate=0.5)))
+  sum(p)
+  sum((f.os-p)^2/p)
+  chisq.test(x=f.os,p=p) ## chi-square test
+```
+
+```{r chi-square test-2 ,warning=FALSE}
+  #install.packages("vcd") ## install package
+  library(vcd) ## loading vcd package
+  gf<-goodfit(x.poi,type= "poisson",method= "MinChisq")
+  summary(gf)
+```
+
+
+```{r chi-square test-3}
+  #分布检验
+  x.wei<-rweibull(n=200,shape=2,scale=1) 
+  ks.test(x.wei,"pweibull", shape=2,scale=1)
+```
+
+
+```{r chi-square test-4}
+  #变量独立性检验
+  library(vcd)
+  #治疗方式对改善情况是否有影响
+  mytable=xtabs(~Improved+Treatment,data=Arthritis)
+  chisq.test(mytable)
+  #性别对改善情况是否有影响
+  mytable=xtabs(~Improved+Sex,data=Arthritis)
+  chisq.test(mytable)
+```
+
+
+```{r example,warning=FALSE}
+x.wei<-rweibull(n=200,shape=2,scale=1)
+params=fitdistr(x.wei,densfun=dweibull,start=list(scale=0.5,shape=1))## 
+(vscale=params$estimate[1])
+(vshape=params$estimate[2])
+ks.test(x.wei,"pweibull", shape=vshape,scale=vscale)
+```
+
+

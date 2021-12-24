@@ -1,0 +1,247 @@
+---
+title: "Homework"
+author: "ShenTao"
+date: "12/1/2021"
+output: pdf_document
+---
+
+```{r 读取数据}
+# 数据路径为/Users/shentao/Documents/Data.csv
+data <- read.csv("/Users/shentao/Documents/Data.csv", header = TRUE)
+# 列数
+length(data)
+# 行数和列数
+dim.data.frame(data)[1]
+dim.data.frame(data)[2]
+# data
+```
+
+```{r 数据预处理}
+# 检查是否有空值，若有删除对应行
+data <- data[complete.cases(data), ]
+
+# 建立是否重复索引
+index <- duplicated(data$SMILES)
+data <- data[!index, ]
+# 去除第一列
+data <- data[, (2:dim.data.frame(data)[2])]
+
+# 两种方法，得到不满足条件的行
+# 对异常值进行判断,由文档说明可以看出后续得到的四个值为boolean类型，对其进行判断
+# data[i]即为第i列的数据
+for (i in c(730:735)) {
+  data[which(data[i] == 0 || data[i] == 1), ]
+}
+# data
+# 对异常值进行判断,由文档说明可以看出后续得到的四个值为boolean类型，对其进行判断
+# data[which(data$Caco.2==1||data$Caco.2==0),]
+# data[which(data$CYP3A4==1|data$CYP3A4==0),]
+# data[which(data$hERG==1|data$hERG==0),]
+# data[which(data$HOB==1|data$HOB==0),]
+# data[which(data$MN==1|data$MN==0),]
+```
+
+```{r 异常值删除}
+# data
+# data1 <- data
+for (i in c(1:dim.data.frame(data)[2])) {
+  num <- nrow(data) * 0.01
+  j <- 0
+  # 得到异常值
+  OutVals <- boxplot.stats(data[, i], coef = 1.5)$out
+  if (length(OutVals) < num) {
+    # 得到异常点的索引值,所对应的行
+    delete <- which(data[, i] %in% OutVals)
+    # 在数据中删除异常点的数据
+    for (i in delete) {
+      data <- data[-(i - j), ]
+      j <- j + 1
+    }
+  }
+}
+
+# 对于全是0的数据列进行删除操作
+index <- as.null()
+for (i in (1:ncol(data))) {
+  index <- append(index, !all(data[, i] == 0))
+}
+data <- data[, index]
+write.csv(data, "data.csv", row.names = FALSE, na = "")
+```
+
+```{r 相关性分析}
+# 取出数据中的自变量
+independent_variable <- data[, (1:(dim.data.frame(data)[2] - 5))]
+
+# 转化为矩阵，分别取出其中正态分布和非正态分布的自变量
+matrix_independent <- as.matrix(independent_variable)
+# 正态分布自变量索引值
+normal_index <- as.numeric()
+# 非正态分布自变量索引值
+other_index <- as.numeric()
+
+#通过shapiro正态检验，判断出正态分布和非正态分布的自变量
+for (i in (1:ncol(matrix_independent))) {
+  # 第二个参数为1（行计算）或2（列计算）
+  nortest <- shapiro.test(matrix_independent[, i])
+  if (nortest$p.value > 0.05 & nortest$statistic > 0.9) {
+    normal_index <- append(normal_index, i)
+  } else {
+    other_index <- append(other_index, i)
+  }
+}
+
+
+# 数据非正态分布，采用spearman进行相关性分析
+correlation_other <- cor(independent_variable$pIC50, independent_variable[,other_index], method = "spearman")
+#数据正态分布，采用pearman进行相关性分析
+correlation_normal<-cor(independent_variable$pIC50, independent_variable[,c(normal_index,449)], method = "pearson")
+
+#可以看出其正态分布自变量仅有一个，且其相关性系数并不大0.24，所以直接采用spearman系数进行分析
+correlation<-cor(independent_variable$pIC50,independent_variable[,1:ncol(independent_variable)],method = "spearman")
+
+# 将相关性系数取绝对值排序
+#index_normal_sorted_abs <- order(abs(correlation_normal), decreasing = TRUE)
+#correlation_normal <- data.frame(correlation_normal)
+#corData_normal_sorted <- correlation_normal[1, index_normal_sorted_abs]
+#index_other_sorted_abs <- order(abs(correlation_other), decreasing = TRUE)
+#correlation_other <- data.frame(correlation_other)
+#corData_other_sorted <- correlation_other[1, index_other_sorted_abs]
+#合并相关性系数
+#correlation<-merge(corData_normal_sorted,corData_other_sorted)
+
+
+
+#对其进行排序
+index_sorted_abs<-order(abs(correlation),decreasing = TRUE)
+correlation<-data.frame(correlation)
+corData_sorted<-correlation[,index_sorted_abs]
+
+# 转化为df写入csv文件
+write.csv(corData_sorted, "corData.csv", row.names = FALSE, na = "")
+```
+ 
+```{r 构建模型}
+library(fitdistrplus)
+library(lmtest)
+
+# 取出相关性前20的特征
+# index <- index_sorted_abs[1:21]
+# data_model <- independent_variable[, index]
+
+#相关性检验
+index<-as.numeric(index_sorted_abs[1])
+for(i in (2:length(index_sorted_abs))){
+  if(length(index)>20)
+    break
+  corTest<-cor.test(independent_variable$pIC50,independent_variable[,index_sorted_abs[i]],method="spearman",exact = FALSE)
+  str(corTest$p.value)
+  if(corTest$p.value<0.05)
+    index<-append(index,index_sorted_abs[i])
+}
+
+data_model <- independent_variable[, index]
+write.csv(data_model, "data_model.csv", row.names = FALSE, na = "")
+
+# 查看响应变量类型
+# 观察点接近的分布类型
+descdist(data_model[, 1])
+# 我们可以近似将其看作正态分布
+qqnorm(data_model[, 1], col = 2, lwd = 2)
+# 我们可以发现gamma分布的标准误差比正态分布大，所以近似将其看作正态分布分布
+fitdist(data = data_model[, 1], "norm")
+fitdist(data = data_model[, 1], "gamma")
+
+# 划分训练集和测试集（4:1）
+set.seed(756)
+sub <- sample(1:nrow(data_model), round(nrow(data_model) * 0.8))
+data_train <- data_model[sub, ] # 取0.8的数据做训练集
+data_test <- data_model[-sub, ] # 取0.2的数据做测试集
+
+# 构建pIC50前20个相关性自变量的广义线性回归模型
+glm.control(epsilon = 1e-8, maxit = 25, trace = FALSE)
+#regression.model <- glm(pIC50 ~ MDEC.23 + MLogP + LipoaffinityIndex + C1SP2 + nC + CrippenLogP + maxsOH + AMR + ATSp5 + SwHBa + ATSp4 + ATSp2 + ATSp1 + C2SP2 + SP.5 + apol + minsssN + nT6Ring + fragC + SaaCH, data = data_train)
+regression.model <- glm(pIC50 ~ .,family = gaussian(link=identity), data = data_train)
+
+# 得到模型的分析
+coef(regression.model)
+summary(regression.model)
+lrtest(regression.model)
+```
+
+```{r 模型概览}
+library(ggplot2)
+# 将预测与原有图形进行比对
+x <- 1:dim.data.frame(data_train)[1]
+
+# 通过模型进行预测
+pIC50_predict <- predict(regression.model)
+p1 <- ggplot()
+p1 + geom_line(data = data_train, mapping = aes(x = x, y = pIC50), col = "black") +
+  geom_line(mapping = aes(x = x, y = pIC50_predict), col = "red")
+
+# 由于太过密集，采用一部分数据进行展示
+x1 <- 1:200
+pIC50_predict <- predict(regression.model)[1:200]
+p2 <- ggplot()
+p2 + geom_line(data = data_train[1:200, ], mapping = aes(x = x1, y = pIC50), col = "black") +
+  geom_line(mapping = aes(x = x1, y = pIC50_predict), col = "red")
+```
+
+```{r 拟合优度R^2计算}
+# type = response 给出具体的预测概率，而 type = class按规定的阈值给出分类，默认为response
+predict_test <- predict(regression.model, data_test)
+# 计算拟合优度R^2
+R2_test <- 1 - (sum((data_test$pIC50 - predict_test)^2) / sum((data_test$pIC50 - mean(data_test$pIC50))^2))
+R2_test
+```
+
+```{r Caco.2逻辑回归模型}
+# 得到新的测试集和训练集
+newData_model <- data[, c(index_sorted_abs[2:21], 450)]
+#Caco.2<-data.frame(Caco.2=data$Caco.2)
+#newData_model<-merge(data[,index_sorted_abs[2:21]],Caco.2)
+set.seed(756)
+newSub <- sample(1:nrow(newData_model), round(nrow(newData_model) * 0.8))
+newData_train <- newData_model[newSub, ]
+newData_test <- newData_model[-newSub, ]
+# 构建逻辑回归模型
+logic.model <- glm(Caco.2 ~ ., family = binomial(logit), data = newData_train)
+summary(logic.model)
+
+exp(coef(logic.model))
+```
+
+```{r 逻辑回归模型评估}
+library(ROCR)
+library(pROC)
+# 显示中文
+# par(family = "STKaiti")
+
+# 对测试集进行预测,阈值选取为0.246
+pre_logistic <- as.numeric(predict(logic.model, newdata = newData_test, type = "response"))
+
+# 绘制ROC曲线
+logistic_roc <- roc(newData_test$Caco.2, pre_logistic)
+plot(logistic_roc, print.auc = TRUE, auc.polygon = TRUE, grid = c(0.1, 0.2), grid.col = c("green", "red"), max.auc.polygon = TRUE, auc.polygon.col = "skyblue", print.thres = TRUE, main = "逻辑回归ROC曲线")
+
+# 将测试集计算所得概率与观测本身取值整合到一起
+for (i in (1:length(pre_logistic))) {
+  if (pre_logistic[i] >= 0.53) {
+    pre_logistic[i] <- 1
+  } else {
+    pre_logistic[i] <- 0
+  }
+}
+obs_p_logistic <- data.frame(prob = pre_logistic, obs = pre_logistic)
+
+# 输出混淆矩阵
+table1 <- table(newData_test$Caco.2, pre_logistic, dnn = c("真实值", "预测值"))
+table1
+
+# 计算F1值
+precision <- table1[2, 2] / (table1[1, 2] + table1[2, 2])
+reCall <- table1[2, 2] / (table1[2, 1] + table1[2, 2])
+F1 <- 2 * precision * reCall / (precision + reCall)
+F1
+```

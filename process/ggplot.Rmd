@@ -1,0 +1,67 @@
+---
+title: "plot和ggplot函数"
+author: "ShenTao"
+date: "9/30/2021"
+output: pdf_document
+---
+#plot画图由于不如ggplot美观，在这不进行编码与显示，
+
+#ggplot画图
+将绘图与数据分离，数据相关的绘图与数据无关的绘图分离
+ggplot按涂层作图
+ggplot具有保有命令式作图的调整函数，使其更具灵活性
+ggplot2将常见的统计变换融入到了绘图中
+ggplot(data=,mapping=)data为数据，mappin为映射关系即将数据的哪些部分分别映射到x与y对应的数据，的图层
+
+图层可以允许用户一步步构建图形，方便单独对图层进行修改
+
+绘图命令geom_XXX(aes=,alpha=,position=)   alpha表示透明度，position表示位置
+
+#ggplot画散点图
+```{r}
+mpg<-data.frame(
+  cty=c(12,24,53,56,56,7,5,38,43,25,48,35,34,29,48,46),
+  hwy=c(20,31,13,24,40,2,40,2,23,35,32,48,50,12,30,45),
+  year=c(1999,2000,1999,2000,1999,1999,1999,2000,1999,2000,2000,1999,2000,2000,1999,2000)
+)
+p<-ggplot(mpg,aes(x=cty,y=hwy,color=factor(year)))
+p+geom_point()
+#size还可以选择数据中的属性进行区分
+q<-ggplot(mpg,aes(x=cty,y=hwy,color=factor(year),size=2))
+q+geom_point()
+```
+
+#标度$cale负责控制映射后图形属性的显示方式，具体形式上来看就是图例和坐标刻度
+```{r}
+#单步执行看区别
+mpg<-data.frame(
+  cty=c(12,24,53,56,56,7,5,38,43,25,48,35,34,29,48,46),
+  hwy=c(20,31,13,24,40,2,40,2,23,35,32,48,50,12,30,45),
+  year=c(1999,2000,1999,2000,1999,1999,1999,2000,1999,2000,2000,1999,2000,2000,1999,2000)
+)
+p<-ggplot(data=mpg,mapping=aes(x=cty,y=hwy))
+p<-p+geom_point(aes(colour=factor(year),size=2))
+#stat_smooth对数据进行线拟合
+p<-p+stat_smooth()
+#增加标度
+p+scale_color_manual(values=c('blue','red4'))
+```
+
+#对画图进行分面操作，即在一个plot下展示不同的画图操作，画面
+```{r}
+mpg<-data.frame(
+  cty=c(12,24,53,56,56,7,5,38,43,25,48,35,34,29,48,46),
+  hwy=c(20,31,13,24,40,2,40,2,23,35,32,48,50,12,30,45),
+  year=c(1999,2000,1999,2000,1999,1999,1999,2000,1999,2000,2000,1999,2000,2000,1999,2000)
+)
+p<-ggplot(data=mpg,mapping = aes(x=cty,y=hwy))
+p<-p+stat_smooth()
+p<-p+geom_point(aes(colour=factor(year),size=2))
+p<-p+scale_size_continuous(range=c(4,10))
+#facet_wrap(data,ncol)data是对图片进行区分的属性，ncol表示一行放几张图片
+p+facet_wrap(~year,ncol=1)
+```
+
+#其他对图形的操作，如labs（x=，y=）对x，y轴进行文字说明
+ggtitle（）添加标题
+theme_grey(base_family="SKTaiti")显示中文

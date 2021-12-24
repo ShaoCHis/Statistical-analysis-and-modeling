@@ -1,0 +1,205 @@
+---
+title: "test"
+author: "ShenTao"
+date: "9/29/2021"
+output: pdf_document
+---
+```{r}
+set.seed(10)
+y<-as.numeric()
+y<-append(y,2)
+y
+x<-sample(1:10,4)
+x
+x<-append(x,2)
+x
+exam.vec.2<-rep(1,8)
+exam.vec.2
+exam.vec.2<-append(exam.vec.2,2,after = 2)
+exam.vec.2
+all(exam.vec.2==1)
+```
+
+
+```{r setup, include=TRUE}
+Pitchers_Speeds<-data.frame(
+  Pitchers_Name=c(NA,"Bob Feller","Aroldis Chapman","Aroldis Chapman","Joel Zumaya"),
+  MPH=c(108.1,107.6,106,105.1,104.8),
+  stringsAsFactors = FALSE
+)
+Pitchers_Speeds
+complete.cases(Pitchers_Speeds)
+#拿到框架中的一列包括属性名称，返回data.frame结构
+Pitchers_Speeds[1]
+#拿到data中$属性的数据，仅仅为数据
+Pitchers_Speeds$MPH
+#仅拿到某一列的数据不包括属性名称，仅仅为数据
+Pitchers_Speeds[[1]]
+```
+
+
+#对data frame进行取值操作
+```{r}
+df<-data.frame(
+  num=c(3,4,2,-1),
+  char=c("a","b","b","a"),
+  lgc=c(T,F,T,T),
+  stringsAsFactors = F
+)
+df
+#拿到char所对应的一列
+df["char"]
+nrow(df)
+```
+
+#data.frame还具有许多可执行的其他操作
+#colnames（）得到列名，rownames（）得到行名，nrwo()、ncol（）分别得到行数、列数
+
+#merge(data.frame1,data.frame2)将两个data进行合并，理解为数据库的自然连接
+```{r}
+test1<-data.frame(
+  name=c("Dick","Gose","Rolf","Helen"),
+  year=c(1963,1970,1971,1974),
+  BA=c(0.12,0.53,0.53,0.81),
+  HR=c(0.27,0.74,0.28,0.29)
+)
+test2<-data.frame(
+  name=c("Dick","Gose","Rolf","Helen"),
+  year=c(1963,1970,1971,1974),
+  A=c(0.42,0.26,0.87,0.86),
+  FA=c(0.12,0.57,0.37,0.15)
+)
+test<-merge(test1,test2)
+test
+```
+
+#aggregate()将data进行分类组合，它将data分成不同的组别，然后对不同的组别进行操作
+```{r}
+gr<-c("A","A","B","B")
+x<-c(1,2,3,4)
+y<-c(4,3,2,1)
+myf<-data.frame(gr,x,y)
+#aggregate(data,group by,function),data指需要进行操作的dataframe，第二个参数为分类的依据，第三个操作是分类后想要进行的操作
+aggregate(myf,list(myf$gr),mean)
+```
+
+#stack()将dataframe转换为一列同时对应其组别
+```{r}
+group1<-rnorm(3)
+group2<-rnorm(3)
+group3<-rnorm(3)
+group<-data.frame(group1,group2,group3)
+stack(group)
+```
+
+#List用法,list中每一个元素可以是不同的数据类型
+#与dataframe不同的是，每一个元素中所包含的元素的个数不一定相等
+```{r}
+L<-list(c("egg","apple","milk"),c(2,3,2),c("cartons","lbs","carton"))
+L
+l<-list(
+  number=c(1,2,3),
+  char=c("a","b"),
+  other_list=list(
+    logical=c(T,F,T,F),
+    moreChar="something"
+  )
+)
+l[1]
+l["number"]
+l[[1]]
+l[3]
+```
+
+#一些小操作
+```{r}
+r<-"hello"
+t<-"world"
+#用！将两个字符隔开
+paste(r,t,sep="!")
+```
+```{r}
+mychar<-"This is a character"
+#对字符串进行计数
+nchar(mychar)
+```
+```{r}
+x<-c("Gose","Longhow","David")
+#取出字符串中从first到last的字符集合
+substring(x,first=2,last = 4)
+```
+```{r}
+paste("number",1:10,sep='.')
+```
+```{r}
+mychar<-c("mytest","abctestabc","test.po.test")
+#pattern表示需要匹配的字符串，使用replacement进行替换，fixed=T表示需要完全匹配
+gsub(pattern = "test",replacement = "",x=mychar,fixed = TRUE)
+```
+
+#strsplit()将字符串根据指定的字符进行分割
+```{r}
+x<-c("some~text","another-string")
+strsplit(x,split = NULL)
+#指定的字符需要使用中括号括起来
+strsplit(x,split="[~-]")
+```
+
+#Factor()因子
+#名义型变量是没有顺序的类别变量
+#有序型变量表示一种顺序关系，而非数量关系
+```{r}
+x<-1:15
+breaks<-c(0,5,10,15,20)
+#cut根据所给定的一维向量进行数据的切分
+cut(x,breaks)
+#将距离等分为5份，然后对其进行切分
+cut(x,breaks=5)
+y<-rnorm(15)
+cut(y,breaks=3,labels=c("low","medium","high"))
+```
+
+#日期处理操作Date和Time
+```{r}
+temp<-c("12-09-1973","29-01-1974")
+#将字符串类型与指定的日期格式对应
+z<-as.Date(temp,"%d-%m-%Y")
+z
+data.class(z)
+#将date类型的数据按照指定的格式进行输出
+format(z,"%d-%m-%Y")
+#计算时间戳相差的时间天数
+z[2]-z[1]
+#计算当前给定日期的星期数,与此类似的还有months，quarters计算季度
+quarters(z[2])
+weekdays(z[1])
+```
+
+#Special Constants一些特殊的常量，
+#NA表示空值，Inf表示正无穷大，-Inf表示负无穷大，TRUE表示真值，FALSE表示假
+
+#set.seed(431)设置的种子的意义在于，随机数的产生每次都是随机的，设置种子即是用种子的编号来保存这一次所产生的随机数，以免每次随机数产生的结果都不同
+```{r}
+set.seed(431)
+#replicte(times,sample(counts,number))在1～number中产生counts个随机数，并重复这个过程times次
+(mat43=replicate(4,sample(3,3)))
+#将0重复4次输出
+(mat431=rep(0,4))
+#拿到矩阵每列的最大值赋值给mat431
+for(j in 1:4){
+  mat431[j]=max(mat43[,j])
+}
+mat431
+```
+
+#R语言中函数的写法
+```{r}
+fun1=function(arg1,arg2){
+  w=arg2^2
+  return(arg1+w)
+}
+fun1(3,5)
+```
+
+#文件的io读入与输出
+file.show()、read.table()等等函数
